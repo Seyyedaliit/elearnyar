@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">elearnyar</string>
+    <string name="app_subtitle">سامانه آموزش الکترونیکی دانشگاه شهید باهنر کرمان</string>
+
+    <string name="tab_exercises">تمرین‌های فعال</string>
+    <string name="tab_learning">فایل‌های آموزشی</string>
+
+    <string name="login_title">ورود به سامانه elearn</string>
+    <string name="username_hint">شماره دانشجویی / شماره استادی</string>
+    <string name="password_hint">کلمه عبور</string>
+    <string name="btn_login">ورود و همگام‌سازی</string>
+    <string name="logging_in">در حال ورود به سامانه...</string>
+    <string name="syncing_data">در حال دریافت دروس و فایل‌ها...</string>
+
+    <string name="settings_title">تنظیمات و پایش خودکار</string>
+    <string name="theme_title">تم برنامه</string>
+    <string name="theme_system">پیروی از تم سیستم</string>
+    <string name="theme_light">تم روشن (روز)</string>
+    <string name="theme_dark">تم سورمه‌ای دارک (شب)</string>
+
+    <string name="sync_interval_title">فاصله زمانی پایش خودکار</string>
+    <string name="sync_enabled">فعال‌سازی پایش دوره‌ای خودکار</string>
+
+    <string name="notifications_title">تنظیمات یادآور و نوتیفیکیشن‌ها</string>
+    <string name="notif_on_scan">با هر بار پایش برنامه</string>
+    <string name="notif_weekly">یادآور هفتگی</string>
+    <string name="notif_due_day">یادآور روز موعود (روز تحویل)</string>
+    <string name="notif_3h">۳ ساعت قبل از پایان مهلت</string>
+    <string name="notif_1h">۱ ساعت قبل از پایان مهلت</string>
+    <string name="notif_15m">۱۵ دقیقه قبل از پایان مهلت</string>
+
+    <string name="active_exercises_title">تمرین‌های دارای مهلت تحویل</string>
+    <string name="expired_exercises_title">تمرین‌های منسوخ شده (پایان‌یافته)</string>
+
+    <string name="btn_download">دانلود فایل</string>
+    <string name="btn_upload">ارسال پاسخ / آپلود</string>
+    <string name="btn_logout">خروج از حساب</string>
+
+    <string name="no_active_exercises">در حال حاضر هیچ تمرین فعالی وجود ندارد 🎉</string>
+    <string name="no_learning_files">هیچ فایل آموزشی برای این درس ثبت نشده است.</string>
+</resources>

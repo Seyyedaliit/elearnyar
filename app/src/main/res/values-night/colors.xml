@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Dark Mode: Deep Navy & Frosted Glass (سورمه‌ای شیک) -->
+    <color name="top_bar_bg">#070E22</color>
+    <color name="top_bar_dark">#040711</color>
+    <color name="tab_bg">#09122B</color>
+
+    <color name="primary">#38BDF8</color>
+    <color name="primary_dark">#0284C7</color>
+    <color name="primary_light">#1E293B</color>
+    <color name="accent">#38BDF8</color>
+    <color name="accent_dark">#0284C7</color>
+
+    <color name="background">#0B132B</color>
+    <color name="surface">#131F3B</color>
+    <color name="card_background">#131F3B</color>
+    <color name="card_glass_stroke">#24365D</color>
+    <color name="text_primary">#F8FAFC</color>
+    <color name="text_secondary">#94A3B8</color>
+    <color name="divider">#1E293B</color>
+
+    <!-- Sync Floating Glass Banner in Dark Navy -->
+    <color name="sync_banner_bg">#132448</color>
+    <color name="sync_banner_stroke">#38BDF8</color>
+    <color name="sync_banner_text">#7DD3FC</color>
+
+    <!-- Expired assignments deep navy-gray theme -->
+    <color name="gray_bg">#101930</color>
+    <color name="gray_header">#94A3B8</color>
+    <color name="gray_text">#64748B</color>
+
+    <!-- Badges with rich contrast -->
+    <color name="badge_active">#34D399</color>
+    <color name="badge_active_bg">#064E3B</color>
+    <color name="badge_warning">#FBBF24</color>
+    <color name="badge_warning_bg">#451A03</color>
+    <color name="badge_expired">#94A3B8</color>
+    <color name="badge_expired_bg">#1E293B</color>
+
+    <color name="success">#34D399</color>
+    <color name="error">#F87171</color>
+</resources>

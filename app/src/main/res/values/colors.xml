@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Light Mode: Luxury Navy Header with Glass Accents -->
+    <color name="top_bar_bg">#0F172A</color>
+    <color name="top_bar_dark">#0B132B</color>
+    <color name="tab_bg">#0B132B</color>
+
+    <color name="primary">#0284C7</color>
+    <color name="primary_dark">#0369A1</color>
+    <color name="primary_light">#E0F2FE</color>
+    <color name="accent">#38BDF8</color>
+    <color name="accent_dark">#0284C7</color>
+
+    <color name="background">#F1F5F9</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="card_background">#FFFFFF</color>
+    <color name="card_glass_stroke">#CBD5E1</color>
+    <color name="text_primary">#0F172A</color>
+    <color name="text_secondary">#64748B</color>
+    <color name="divider">#E2E8F0</color>
+
+    <!-- Sync Floating Glass Banner -->
+    <color name="sync_banner_bg">#EFF6FF</color>
+    <color name="sync_banner_stroke">#93C5FD</color>
+    <color name="sync_banner_text">#1D4ED8</color>
+
+    <!-- Expired assignments gray-navy theme -->
+    <color name="gray_bg">#E2E8F0</color>
+    <color name="gray_header">#475569</color>
+    <color name="gray_text">#64748B</color>
+
+    <!-- Badges with rich spacing and contrast -->
+    <color name="badge_active">#059669</color>
+    <color name="badge_active_bg">#ECFDF5</color>
+    <color name="badge_warning">#D97706</color>
+    <color name="badge_warning_bg">#FFFBEB</color>
+    <color name="badge_expired">#64748B</color>
+    <color name="badge_expired_bg">#E2E8F0</color>
+
+    <color name="success">#10B981</color>
+    <color name="error">#EF4444</color>
+</resources>
