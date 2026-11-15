@@ -8,9 +8,9 @@ import android.os.Build;
 
 public class App extends Application {
 
-    public static final String CHANNEL_REMINDERS = "elearn_reminders";
-    public static final String CHANNEL_SYNC = "elearn_sync";
-    public static final String CHANNEL_SYNC_PROGRESS = "elearn_sync_progress";
+    public static final String CHANNEL_REMINDERS = "elearn_reminders_v4";
+    public static final String CHANNEL_SYNC = "elearn_sync_v4";
+    public static final String CHANNEL_SYNC_PROGRESS = "elearn_sync_progress_v4";
 
     private static App instance;
 
@@ -42,29 +42,39 @@ public class App extends Application {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
                 if (nm != null) {
+                    // Clean up legacy channels if present
+                    try {
+                        nm.deleteNotificationChannel("elearn_reminders");
+                        nm.deleteNotificationChannel("elearn_sync");
+                        nm.deleteNotificationChannel("elearn_sync_progress");
+                    } catch (Throwable ignored) {}
+
                     NotificationChannel chReminders = new NotificationChannel(
                             CHANNEL_REMINDERS,
-                            "یادآور تمرین‌های باهنر",
+                            "یادآورها و تمرین‌های جدید",
                             NotificationManager.IMPORTANCE_HIGH
                     );
-                    chReminders.setDescription("اطلاع‌رسانی موعد تحویل تمرین‌ها و یادآورهای زمان‌بندی شده");
+                    chReminders.setDescription("اطلاع‌رسانی موعد تحویل تمرین‌ها و ثبت تمرین جدید در سامانه");
                     chReminders.enableVibration(true);
                     chReminders.enableLights(true);
 
                     NotificationChannel chSync = new NotificationChannel(
                             CHANNEL_SYNC,
-                            "پایش دوره‌ای و فایل‌های جدید",
-                            NotificationManager.IMPORTANCE_DEFAULT
+                            "نتیجه پایش سامانه",
+                            NotificationManager.IMPORTANCE_HIGH
                     );
-                    chSync.setDescription("اطلاع‌رسانی فایل‌های آموزشی و تمرین‌های اضافه شده جدید در پایش دوره‌ای");
+                    chSync.setDescription("اطلاع‌رسانی نتیجه پایش سامانه و تعداد تمرین‌های فعال");
                     chSync.enableVibration(true);
+                    chSync.enableLights(true);
 
                     NotificationChannel chSyncProgress = new NotificationChannel(
                             CHANNEL_SYNC_PROGRESS,
-                            "وضعیت پایش خودکار",
-                            NotificationManager.IMPORTANCE_LOW
+                            "وضعیت در حال پایش",
+                            NotificationManager.IMPORTANCE_DEFAULT
                     );
-                    chSyncProgress.setDescription("نمایش وضعیت در حال انجام پایش سامانه elearn");
+                    chSyncProgress.setDescription("نمایش وضعیت در حال انجام پایش و بروزرسانی سامانه elearn");
+                    chSyncProgress.setSound(null, null);
+                    chSyncProgress.enableVibration(false);
                     chSyncProgress.setShowBadge(false);
 
                     nm.createNotificationChannel(chReminders);

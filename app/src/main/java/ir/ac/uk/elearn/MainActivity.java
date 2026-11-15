@@ -130,7 +130,13 @@ public class MainActivity extends AppCompatActivity implements
 
     private final ActivityResultLauncher<String> notificationPermissionLauncher = registerForActivityResult(
             new ActivityResultContracts.RequestPermission(),
-            isGranted -> {}
+            isGranted -> {
+                if (Boolean.TRUE.equals(isGranted)) {
+                    if (prefs != null && prefs.isLoggedIn()) {
+                        performSync(false);
+                    }
+                }
+            }
     );
 
     @Override
@@ -336,6 +342,9 @@ public class MainActivity extends AppCompatActivity implements
         layoutSyncProgress.setVisibility(View.VISIBLE);
         tvSyncStatus.setText("در حال اتصال به سامانه elearn...");
 
+        // 1. Show refreshing notification in Notification Center
+        NotificationScheduler.showSyncProgress(this, "در حال اتصال به سامانه elearn...", 0, 100);
+
         new Thread(() -> {
             try {
                 String u = prefs.getUsername();
@@ -347,6 +356,8 @@ public class MainActivity extends AppCompatActivity implements
                             tvSyncStatus.setText(message + " (" + current + "%)");
                         }
                     });
+                    // Update progress notification live
+                    NotificationScheduler.showSyncProgress(MainActivity.this, message, current, total);
                 });
 
                 mainHandler.post(() -> {
@@ -355,6 +366,25 @@ public class MainActivity extends AppCompatActivity implements
                     saveDataToCache(result);
                     NotificationScheduler.schedulePeriodicSync(this);
                     NotificationScheduler.scheduleExerciseReminders(this, activeExercises);
+
+                    // 2. Clear progress notification so it goes away
+                    NotificationScheduler.cancelSyncProgress(this);
+
+                    // 3. Post scan result notification in Notification Center
+                    String resultTitle = "پایش سامانه elearn انجام شد";
+                    String resultBody;
+                    int activeCount = activeExercises.size();
+                    if (activeCount == 0) {
+                        resultBody = "در حال حاضر هیچ تمرین فعالی در سامانه وجود ندارد.";
+                    } else if (activeCount == 1) {
+                        ExerciseItem single = activeExercises.get(0);
+                        resultBody = "۱ تمرین فعال با مهلت تحویل یافت شد (" + single.getCourseName() + " - " + single.getRemainingText() + ")";
+                    } else {
+                        ExerciseItem first = activeExercises.get(0);
+                        resultBody = PersianDateHelper.toPersianDigits(String.valueOf(activeCount)) + " تمرین فعال با مهلت تحویل یافت شد.\nنزدیک‌ترین: " + first.getCourseName() + " (" + first.getRemainingText() + ")";
+                    }
+                    NotificationScheduler.showSyncResultNotification(this, resultTitle, resultBody);
+
                     if (userTriggered) {
                         Toast.makeText(this, "اطلاعات با موفقیت به‌روزرسانی شد.", Toast.LENGTH_SHORT).show();
                     }
@@ -362,6 +392,8 @@ public class MainActivity extends AppCompatActivity implements
             } catch (Exception e) {
                 mainHandler.post(() -> {
                     layoutSyncProgress.setVisibility(View.GONE);
+                    NotificationScheduler.cancelSyncProgress(MainActivity.this);
+                    NotificationScheduler.showSyncResultNotification(MainActivity.this, "خطا در پایش سامانه elearn", "ارتباط با سامانه برقرار نشد: " + e.getMessage());
                     if (userTriggered) {
                         Toast.makeText(this, "خطا در بروزرسانی: " + e.getMessage(), Toast.LENGTH_LONG).show();
                     }
@@ -437,6 +469,9 @@ public class MainActivity extends AppCompatActivity implements
                         currentExIds.add(ex.getExid());
                         if (!isFirst && !known.contains(ex.getExid()) && !ex.isExpired()) {
                             newlyFound.add(ex.getExid());
+                            String title = "🔔 تمرین جدید در " + ex.getCourseName();
+                            String body = ex.getTitle() + "\nمهلت تحویل: " + ex.getPersianDeadline();
+                            NotificationScheduler.showNewExerciseNotification(this, title, body, ex.getExid().hashCode());
                         }
                     }
                 }

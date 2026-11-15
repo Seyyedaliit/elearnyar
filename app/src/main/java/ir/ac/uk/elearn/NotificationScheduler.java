@@ -17,6 +17,9 @@ public class NotificationScheduler {
     public static final String ACTION_REMINDER = "ir.ac.uk.elearn.ACTION_REMINDER";
     public static final String ACTION_PERIODIC_SYNC = "ir.ac.uk.elearn.ACTION_PERIODIC_SYNC";
 
+    public static final int NOTIF_ID_SYNC_PROGRESS = 7001;
+    public static final int NOTIF_ID_SYNC_RESULT = 7002;
+
     public static final String EXTRA_EXID = "extra_exid";
     public static final String EXTRA_TITLE = "extra_title";
     public static final String EXTRA_COURSE = "extra_course";
@@ -238,7 +241,8 @@ public class NotificationScheduler {
                     .setContentTitle(title)
                     .setContentText(body)
                     .setStyle(new NotificationCompat.BigTextStyle().bigText(body))
-                    .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                    .setPriority(NotificationCompat.PRIORITY_HIGH)
+                    .setDefaults(NotificationCompat.DEFAULT_ALL)
                     .setAutoCancel(true)
                     .setContentIntent(pi);
 
@@ -263,10 +267,11 @@ public class NotificationScheduler {
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, App.CHANNEL_SYNC_PROGRESS)
                 .setSmallIcon(R.drawable.ic_stat_notification)
-                .setContentTitle("پایش خودکار سامانه elearn")
-                .setContentText(statusMessage != null ? statusMessage : "در حال پایش و واکشی اطلاعات...")
-                .setPriority(NotificationCompat.PRIORITY_LOW)
+                .setContentTitle("پایش سامانه elearn")
+                .setContentText(statusMessage != null ? statusMessage : "در حال پایش و بروزرسانی دروس...")
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                 .setOngoing(true)
+                .setOnlyAlertOnce(true)
                 .setContentIntent(pi);
 
         if (total > 0 && current >= 0) {
@@ -276,6 +281,59 @@ public class NotificationScheduler {
         }
 
         return builder.build();
+    }
+
+    public static void showSyncProgress(Context context, String statusMessage, int current, int total) {
+        try {
+            NotificationManager nm = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+            if (nm != null) {
+                Notification notif = buildSyncProgressNotification(context, statusMessage, current, total);
+                nm.notify(NOTIF_ID_SYNC_PROGRESS, notif);
+            }
+        } catch (Throwable t) {
+            t.printStackTrace();
+        }
+    }
+
+    public static void cancelSyncProgress(Context context) {
+        try {
+            NotificationManager nm = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+            if (nm != null) {
+                nm.cancel(NOTIF_ID_SYNC_PROGRESS);
+            }
+        } catch (Throwable t) {
+            t.printStackTrace();
+        }
+    }
+
+    public static void showSyncResultNotification(Context context, String title, String body) {
+        try {
+            Intent intent = new Intent(context, MainActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            PendingIntent pi = PendingIntent.getActivity(
+                    context,
+                    NOTIF_ID_SYNC_RESULT,
+                    intent,
+                    PendingIntent.FLAG_UPDATE_CURRENT | (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? PendingIntent.FLAG_IMMUTABLE : 0)
+            );
+
+            NotificationCompat.Builder builder = new NotificationCompat.Builder(context, App.CHANNEL_SYNC)
+                    .setSmallIcon(R.drawable.ic_stat_notification)
+                    .setContentTitle(title)
+                    .setContentText(body)
+                    .setStyle(new NotificationCompat.BigTextStyle().bigText(body))
+                    .setPriority(NotificationCompat.PRIORITY_HIGH)
+                    .setDefaults(NotificationCompat.DEFAULT_ALL)
+                    .setAutoCancel(true)
+                    .setContentIntent(pi);
+
+            NotificationManager nm = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+            if (nm != null) {
+                nm.notify(NOTIF_ID_SYNC_RESULT, builder.build());
+            }
+        } catch (Throwable t) {
+            t.printStackTrace();
+        }
     }
 
     public static void showNewExerciseNotification(Context context, String title, String body, int notifId) {
@@ -295,6 +353,7 @@ public class NotificationScheduler {
                     .setContentText(body)
                     .setStyle(new NotificationCompat.BigTextStyle().bigText(body))
                     .setPriority(NotificationCompat.PRIORITY_HIGH)
+                    .setDefaults(NotificationCompat.DEFAULT_ALL)
                     .setCategory(NotificationCompat.CATEGORY_EVENT)
                     .setAutoCancel(true)
                     .setContentIntent(pi);
