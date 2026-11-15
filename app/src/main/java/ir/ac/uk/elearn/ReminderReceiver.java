@@ -3,11 +3,7 @@ package ir.ac.uk.elearn;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import org.json.JSONArray;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import android.os.Build;
 
 public class ReminderReceiver extends BroadcastReceiver {
 
@@ -71,83 +67,11 @@ public class ReminderReceiver extends BroadcastReceiver {
         AppPreferences prefs = AppPreferences.getInstance(context);
         if (!prefs.isLoggedIn() || !prefs.isSyncEnabled()) return;
 
-        // Schedule next sync in chain
-        NotificationScheduler.schedulePeriodicSync(context);
-
-        new Thread(() -> {
-            try {
-                String username = prefs.getUsername();
-                String password = prefs.getPassword();
-
-                List<Course> courses = ElearnClient.getInstance().fetchAllData(username, password, null);
-                if (courses == null || courses.isEmpty()) return;
-
-                // Save to cache
-                JSONArray coursesArr = new JSONArray();
-                List<ExerciseItem> allActiveExercises = new ArrayList<>();
-                Set<String> currentExIds = new HashSet<>();
-                Set<String> currentFileIds = new HashSet<>();
-
-                List<ExerciseItem> newlyAddedExercises = new ArrayList<>();
-                List<FileItem> newlyAddedFiles = new ArrayList<>();
-
-                Set<String> knownExIds = prefs.getKnownExerciseIds();
-                Set<String> knownFileIds = prefs.getKnownFileIds();
-                boolean isFirstScan = knownExIds.isEmpty() && knownFileIds.isEmpty();
-
-                for (Course c : courses) {
-                    coursesArr.put(c.toJson());
-
-                    for (ExerciseItem ex : c.getExercises()) {
-                        currentExIds.add(ex.getExid());
-                        if (!ex.isExpired()) {
-                            allActiveExercises.add(ex);
-                        }
-                        if (!isFirstScan && !knownExIds.contains(ex.getExid())) {
-                            newlyAddedExercises.add(ex);
-                        }
-                    }
-
-                    for (FileItem f : c.getLearningFiles()) {
-                        currentFileIds.add(f.getLid());
-                        if (!isFirstScan && !knownFileIds.contains(f.getLid())) {
-                            newlyAddedFiles.add(f);
-                        }
-                    }
-                }
-
-                prefs.setCachedData(coursesArr.toString());
-                prefs.setLastSyncTime(System.currentTimeMillis());
-                prefs.setKnownExerciseIds(currentExIds);
-                prefs.setKnownFileIds(currentFileIds);
-
-                // Re-schedule milestone reminders
-                NotificationScheduler.scheduleExerciseReminders(context, allActiveExercises);
-
-                // Notifications:
-                // 1. Newly detected exercises
-                for (ExerciseItem newEx : newlyAddedExercises) {
-                    String title = "تمرین جدید در " + newEx.getCourseName();
-                    String body = newEx.getTitle() + "\nمهلت تحویل: " + newEx.getPersianDeadline();
-                    NotificationScheduler.showReminderNotification(context, title, body, newEx.getExid().hashCode());
-                }
-
-                // 2. Newly detected learning files
-                for (FileItem newFile : newlyAddedFiles) {
-                    String title = "فایل آموزشی جدید در " + newFile.getCourseName();
-                    String body = newFile.getTitle();
-                    NotificationScheduler.showSyncNotification(context, title, body, newFile.getLid().hashCode());
-                }
-
-                // 3. Scan reminder (if enabled)
-                if (prefs.isNotifOnScan() && !allActiveExercises.isEmpty()) {
-                    String title = "پایش دوره‌ای: " + PersianDateHelper.toPersianDigits(String.valueOf(allActiveExercises.size())) + " تمرین فعال دارید";
-                    ExerciseItem nearest = allActiveExercises.get(0);
-                    String body = "نزدیک‌ترین موعد: " + nearest.getCourseName() + " (" + nearest.getRemainingText() + ")";
-                    NotificationScheduler.showReminderNotification(context, title, body, 9999);
-                }
-
-            } catch (Exception ignored) {}
-        }).start();
+        Intent serviceIntent = new Intent(context, BackgroundSyncService.class);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            context.startForegroundService(serviceIntent);
+        } else {
+            context.startService(serviceIntent);
+        }
     }
 }

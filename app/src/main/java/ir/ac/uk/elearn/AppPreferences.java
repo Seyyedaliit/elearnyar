@@ -182,6 +182,38 @@ public class AppPreferences {
         prefs.edit().putStringSet("known_file_ids", new HashSet<>(ids)).apply();
     }
 
+    // Unseen New Exercises (for in-app indication and badges)
+    public Set<String> getUnseenNewExerciseIds() {
+        return prefs.getStringSet("unseen_new_exercise_ids", new HashSet<String>());
+    }
+
+    public void setUnseenNewExerciseIds(Set<String> ids) {
+        prefs.edit().putStringSet("unseen_new_exercise_ids", new HashSet<>(ids)).apply();
+    }
+
+    public void addUnseenNewExerciseIds(Set<String> newIds) {
+        Set<String> current = new HashSet<>(getUnseenNewExerciseIds());
+        current.addAll(newIds);
+        prefs.edit().putStringSet("unseen_new_exercise_ids", current).apply();
+    }
+
+    public boolean isExerciseNew(String id) {
+        if (id == null) return false;
+        return getUnseenNewExerciseIds().contains(id);
+    }
+
+    public void markExerciseSeen(String id) {
+        if (id == null) return;
+        Set<String> current = new HashSet<>(getUnseenNewExerciseIds());
+        if (current.remove(id)) {
+            prefs.edit().putStringSet("unseen_new_exercise_ids", current).apply();
+        }
+    }
+
+    public void clearUnseenNewExerciseIds() {
+        prefs.edit().remove("unseen_new_exercise_ids").apply();
+    }
+
     // Milestones already notified (e.g. "exid_3h")
     public boolean isMilestoneNotified(String key) {
         Set<String> set = prefs.getStringSet("notified_milestones", new HashSet<String>());

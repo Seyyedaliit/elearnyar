@@ -47,11 +47,33 @@ public class ActiveExerciseAdapter extends RecyclerView.Adapter<ActiveExerciseAd
         holder.tvRemainingCountdown.setText(item.getRemainingText());
         holder.tvDeadline.setText(item.getPersianDeadline());
 
+        AppPreferences prefs = AppPreferences.getInstance(holder.itemView.getContext());
+        if (prefs.isExerciseNew(item.getExid())) {
+            holder.tvBadgeNew.setVisibility(View.VISIBLE);
+        } else {
+            holder.tvBadgeNew.setVisibility(View.GONE);
+        }
+
+        holder.itemView.setOnClickListener(v -> {
+            if (prefs.isExerciseNew(item.getExid())) {
+                prefs.markExerciseSeen(item.getExid());
+                holder.tvBadgeNew.setVisibility(View.GONE);
+            }
+        });
+
         holder.btnDownload.setOnClickListener(v -> {
+            if (prefs.isExerciseNew(item.getExid())) {
+                prefs.markExerciseSeen(item.getExid());
+                holder.tvBadgeNew.setVisibility(View.GONE);
+            }
             if (listener != null) listener.onDownload(item);
         });
 
         holder.btnUpload.setOnClickListener(v -> {
+            if (prefs.isExerciseNew(item.getExid())) {
+                prefs.markExerciseSeen(item.getExid());
+                holder.tvBadgeNew.setVisibility(View.GONE);
+            }
             if (listener != null) listener.onUpload(item);
         });
     }
@@ -62,6 +84,7 @@ public class ActiveExerciseAdapter extends RecyclerView.Adapter<ActiveExerciseAd
     }
 
     static class ViewHolder extends RecyclerView.ViewHolder {
+        TextView tvBadgeNew;
         TextView tvCourseName;
         TextView tvExerciseTitle;
         TextView tvRemainingCountdown;
@@ -71,6 +94,7 @@ public class ActiveExerciseAdapter extends RecyclerView.Adapter<ActiveExerciseAd
 
         ViewHolder(@NonNull View itemView) {
             super(itemView);
+            tvBadgeNew = itemView.findViewById(R.id.tv_badge_new);
             tvCourseName = itemView.findViewById(R.id.tv_course_name);
             tvExerciseTitle = itemView.findViewById(R.id.tv_exercise_title);
             tvRemainingCountdown = itemView.findViewById(R.id.tv_remaining_countdown);

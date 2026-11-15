@@ -2,7 +2,10 @@ package ir.ac.uk.elearn;
 
 import android.Manifest;
 import android.content.ActivityNotFoundException;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
@@ -44,8 +47,10 @@ import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 public class MainActivity extends AppCompatActivity implements
         ActiveExerciseAdapter.OnExerciseActionListener,
@@ -101,6 +106,18 @@ public class MainActivity extends AppCompatActivity implements
     private MaterialButton btnSubmitUpload;
     private ProgressBar pbUploading;
 
+    // New exercise alert banner
+    private LinearLayout layoutNewExerciseBanner;
+    private TextView tvNewExerciseBannerText;
+    private ImageButton btnDismissNewBanner;
+
+    private final BroadcastReceiver syncUpdateReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            mainHandler.post(() -> loadDataFromCache());
+        }
+    };
+
     private final ActivityResultLauncher<String> filePickerLauncher = registerForActivityResult(
             new ActivityResultContracts.GetContent(),
             uri -> {
@@ -140,6 +157,30 @@ public class MainActivity extends AppCompatActivity implements
         }
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        try {
+            IntentFilter filter = new IntentFilter(BackgroundSyncService.ACTION_DATA_UPDATED);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                registerReceiver(syncUpdateReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
+            } else {
+                registerReceiver(syncUpdateReceiver, filter);
+            }
+            if (prefs != null && prefs.isLoggedIn()) {
+                loadDataFromCache();
+            }
+        } catch (Throwable ignored) {}
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        try {
+            unregisterReceiver(syncUpdateReceiver);
+        } catch (Throwable ignored) {}
+    }
+
     private void initViews() {
         tvLastSync = findViewById(R.id.tv_last_sync);
         btnSync = findViewById(R.id.btn_sync);
@@ -159,6 +200,10 @@ public class MainActivity extends AppCompatActivity implements
         tvActiveCountBadge = findViewById(R.id.tv_active_count_badge);
         rvActiveExercises = findViewById(R.id.rv_active_exercises);
         layoutEmptyActive = findViewById(R.id.layout_empty_active);
+
+        layoutNewExerciseBanner = findViewById(R.id.layout_new_exercise_banner);
+        tvNewExerciseBannerText = findViewById(R.id.tv_new_exercise_banner_text);
+        btnDismissNewBanner = findViewById(R.id.btn_dismiss_new_banner);
 
         headerExpired = findViewById(R.id.header_expired);
         ivExpiredArrow = findViewById(R.id.iv_expired_arrow);
@@ -210,6 +255,22 @@ public class MainActivity extends AppCompatActivity implements
 
         // Sync button
         btnSync.setOnClickListener(v -> performSync(true));
+
+        if (btnDismissNewBanner != null) {
+            btnDismissNewBanner.setOnClickListener(v -> {
+                prefs.clearUnseenNewExerciseIds();
+                layoutNewExerciseBanner.setVisibility(View.GONE);
+                activeExerciseAdapter.notifyDataSetChanged();
+            });
+        }
+
+        if (layoutNewExerciseBanner != null) {
+            layoutNewExerciseBanner.setOnClickListener(v -> {
+                prefs.clearUnseenNewExerciseIds();
+                layoutNewExerciseBanner.setVisibility(View.GONE);
+                activeExerciseAdapter.notifyDataSetChanged();
+            });
+        }
 
         // Settings button
         btnSettings.setOnClickListener(v -> showSettingsDialog());
@@ -341,6 +402,21 @@ public class MainActivity extends AppCompatActivity implements
         int expiredCount = expiredExercises.size();
         tvExpiredCountBadge.setText(PersianDateHelper.toPersianDigits(expiredCount + " منسوخ"));
 
+        // Check and display New Exercises Banner
+        if (layoutNewExerciseBanner != null && tvNewExerciseBannerText != null) {
+            Set<String> unseen = prefs.getUnseenNewExerciseIds();
+            if (unseen != null && !unseen.isEmpty()) {
+                int count = unseen.size();
+                String msg = (count == 1) ?
+                        "🔔 یک تمرین جدید در سامانه ثبت شده است!" :
+                        "🔔 " + PersianDateHelper.toPersianDigits(String.valueOf(count)) + " تمرین جدید در سامانه ثبت شده است!";
+                tvNewExerciseBannerText.setText(msg);
+                layoutNewExerciseBanner.setVisibility(View.VISIBLE);
+            } else {
+                layoutNewExerciseBanner.setVisibility(View.GONE);
+            }
+        }
+
         long now = System.currentTimeMillis();
         SimpleDateFormat sdf = new SimpleDateFormat("HH:mm", Locale.US);
         tvLastSync.setText("آخرین بروزرسانی: امروز ساعت " + PersianDateHelper.toPersianDigits(sdf.format(new Date(now))));
@@ -349,9 +425,26 @@ public class MainActivity extends AppCompatActivity implements
     private void saveDataToCache(List<Course> courses) {
         try {
             JSONArray arr = new JSONArray();
+            Set<String> currentExIds = new HashSet<>();
+            Set<String> newlyFound = new HashSet<>();
+            Set<String> known = prefs.getKnownExerciseIds();
+            boolean isFirst = known.isEmpty();
+
             for (Course c : courses) {
                 arr.put(c.toJson());
+                if (c.getExercises() != null) {
+                    for (ExerciseItem ex : c.getExercises()) {
+                        currentExIds.add(ex.getExid());
+                        if (!isFirst && !known.contains(ex.getExid()) && !ex.isExpired()) {
+                            newlyFound.add(ex.getExid());
+                        }
+                    }
+                }
             }
+            if (!newlyFound.isEmpty()) {
+                prefs.addUnseenNewExerciseIds(newlyFound);
+            }
+            prefs.setKnownExerciseIds(currentExIds);
             prefs.setCachedData(arr.toString());
             prefs.setLastSyncTime(System.currentTimeMillis());
         } catch (Exception ignored) {}

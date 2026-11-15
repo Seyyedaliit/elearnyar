@@ -1,6 +1,7 @@
 package ir.ac.uk.elearn;
 
 import android.app.AlarmManager;
+import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
@@ -238,6 +239,63 @@ public class NotificationScheduler {
                     .setContentText(body)
                     .setStyle(new NotificationCompat.BigTextStyle().bigText(body))
                     .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                    .setAutoCancel(true)
+                    .setContentIntent(pi);
+
+            NotificationManager nm = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+            if (nm != null) {
+                nm.notify(notifId, builder.build());
+            }
+        } catch (Throwable t) {
+            t.printStackTrace();
+        }
+    }
+
+    public static Notification buildSyncProgressNotification(Context context, String statusMessage, int current, int total) {
+        Intent intent = new Intent(context, MainActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        PendingIntent pi = PendingIntent.getActivity(
+                context,
+                8888,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT | (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? PendingIntent.FLAG_IMMUTABLE : 0)
+        );
+
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(context, App.CHANNEL_SYNC_PROGRESS)
+                .setSmallIcon(R.drawable.ic_stat_notification)
+                .setContentTitle("پایش خودکار سامانه elearn")
+                .setContentText(statusMessage != null ? statusMessage : "در حال پایش و واکشی اطلاعات...")
+                .setPriority(NotificationCompat.PRIORITY_LOW)
+                .setOngoing(true)
+                .setContentIntent(pi);
+
+        if (total > 0 && current >= 0) {
+            builder.setProgress(total, current, false);
+        } else {
+            builder.setProgress(100, 0, true);
+        }
+
+        return builder.build();
+    }
+
+    public static void showNewExerciseNotification(Context context, String title, String body, int notifId) {
+        try {
+            Intent intent = new Intent(context, MainActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            PendingIntent pi = PendingIntent.getActivity(
+                    context,
+                    notifId,
+                    intent,
+                    PendingIntent.FLAG_UPDATE_CURRENT | (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? PendingIntent.FLAG_IMMUTABLE : 0)
+            );
+
+            NotificationCompat.Builder builder = new NotificationCompat.Builder(context, App.CHANNEL_REMINDERS)
+                    .setSmallIcon(R.drawable.ic_stat_notification)
+                    .setContentTitle(title)
+                    .setContentText(body)
+                    .setStyle(new NotificationCompat.BigTextStyle().bigText(body))
+                    .setPriority(NotificationCompat.PRIORITY_HIGH)
+                    .setCategory(NotificationCompat.CATEGORY_EVENT)
                     .setAutoCancel(true)
                     .setContentIntent(pi);
 

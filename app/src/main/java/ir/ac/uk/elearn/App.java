@@ -10,6 +10,7 @@ public class App extends Application {
 
     public static final String CHANNEL_REMINDERS = "elearn_reminders";
     public static final String CHANNEL_SYNC = "elearn_sync";
+    public static final String CHANNEL_SYNC_PROGRESS = "elearn_sync_progress";
 
     private static App instance;
 
@@ -58,8 +59,17 @@ public class App extends Application {
                     chSync.setDescription("اطلاع‌رسانی فایل‌های آموزشی و تمرین‌های اضافه شده جدید در پایش دوره‌ای");
                     chSync.enableVibration(true);
 
+                    NotificationChannel chSyncProgress = new NotificationChannel(
+                            CHANNEL_SYNC_PROGRESS,
+                            "وضعیت پایش خودکار",
+                            NotificationManager.IMPORTANCE_LOW
+                    );
+                    chSyncProgress.setDescription("نمایش وضعیت در حال انجام پایش سامانه elearn");
+                    chSyncProgress.setShowBadge(false);
+
                     nm.createNotificationChannel(chReminders);
                     nm.createNotificationChannel(chSync);
+                    nm.createNotificationChannel(chSyncProgress);
                 }
             }
         } catch (Throwable t) {
