@@ -11,10 +11,8 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Platform-Android-green.svg" alt="Platform" />
-  <img src="https://img.shields.io/badge/API-21%2B%20(Android%205.0%2B)-blue.svg" alt="API" />
-  <img src="https://img.shields.io/badge/Version-1.4-brightgreen.svg" alt="Version" />
-  <img src="https://img.shields.io/badge/Target%20SDK-34%20(Android%2014)-orange.svg" alt="Target SDK" />
+  <img src="https://img.shields.io/badge/Platform-Android%20%7C%20iOS%20Web-green.svg" alt="Platform" />
+  <img src="https://img.shields.io/badge/Version-1.7-brightgreen.svg" alt="Version" />
   <img src="https://img.shields.io/badge/License-MIT-purple.svg" alt="License" />
 </p>
 
@@ -100,6 +98,16 @@ cd elearnyar
 
 فایل APK خروجی در مسیر زیر ایجاد می‌شود:
 `app/build/outputs/apk/debug/app-debug.apk`
+
+---
+
+## 🍏 وب‌اپلیکیشن مخصوص آیفون (iOS Web App / PWA)
+
+برای کاربران سیستم‌عامل **iOS (آیفون و آیپد)** و مرورگرهای دسکتاپ، نسخه کامل وب‌اپلیکیشن در پوشه `webapp/` قرار دارد:
+- پشتیبانی کامل از **Add to Home Screen** در Safari آیفون (اجرای تمام‌صفحه و بدون نوار آدرس).
+- پشتیبانی از تمام ۴ تب: تمرین‌های فعال، فایل‌های آموزشی، پیام‌های اساتید و سوابق حضور و غیاب.
+- طراحی اختصاصی شیشه‌ای منطبق با ابعاد آیفون و جزیره پویا (Dynamic Island).
+- راهنمای کامل اجرا در [webapp/README.md](webapp/README.md) در دسترس است.
 
 ---
 
