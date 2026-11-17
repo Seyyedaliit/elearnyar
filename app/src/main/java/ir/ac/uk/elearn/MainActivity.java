@@ -92,6 +92,19 @@ public class MainActivity extends AppCompatActivity implements
     // Learning Tab
     private CourseAccordionAdapter courseAccordionAdapter;
 
+    // Messages Tab
+    private View viewMessages;
+    private RecyclerView rvMessages;
+    private View layoutEmptyMessages;
+    private MessagesAdapter messagesAdapter;
+    private final List<MessageItem> messageList = new ArrayList<>();
+
+    // Attendance Tab
+    private View viewAttendance;
+    private RecyclerView rvAttendance;
+    private View layoutEmptyAttendance;
+    private AttendanceAdapter attendanceAdapter;
+
     // Data in-memory
     private final List<Course> courseList = new ArrayList<>();
     private final List<ExerciseItem> activeExercises = new ArrayList<>();
@@ -215,6 +228,14 @@ public class MainActivity extends AppCompatActivity implements
         ivExpiredArrow = findViewById(R.id.iv_expired_arrow);
         tvExpiredCountBadge = findViewById(R.id.tv_expired_count_badge);
         rvExpiredExercises = findViewById(R.id.rv_expired_exercises);
+
+        viewMessages = findViewById(R.id.view_messages);
+        rvMessages = findViewById(R.id.rv_messages);
+        layoutEmptyMessages = findViewById(R.id.layout_empty_messages);
+
+        viewAttendance = findViewById(R.id.view_attendance);
+        rvAttendance = findViewById(R.id.rv_attendance);
+        layoutEmptyAttendance = findViewById(R.id.layout_empty_attendance);
     }
 
     private void setupAdapters() {
@@ -229,20 +250,26 @@ public class MainActivity extends AppCompatActivity implements
         courseAccordionAdapter = new CourseAccordionAdapter(this);
         rvCoursesAccordion.setLayoutManager(new LinearLayoutManager(this));
         rvCoursesAccordion.setAdapter(courseAccordionAdapter);
+
+        messagesAdapter = new MessagesAdapter(this);
+        rvMessages.setLayoutManager(new LinearLayoutManager(this));
+        rvMessages.setAdapter(messagesAdapter);
+
+        attendanceAdapter = new AttendanceAdapter(this);
+        rvAttendance.setLayoutManager(new LinearLayoutManager(this));
+        rvAttendance.setAdapter(attendanceAdapter);
     }
 
     private void setupListeners() {
-        // Tab switching
+        // Tab switching (0: Exercises, 1: Files, 2: Messages, 3: Attendance)
         tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
             @Override
             public void onTabSelected(TabLayout.Tab tab) {
-                if (tab.getPosition() == 0) {
-                    viewExercises.setVisibility(View.VISIBLE);
-                    rvCoursesAccordion.setVisibility(View.GONE);
-                } else {
-                    viewExercises.setVisibility(View.GONE);
-                    rvCoursesAccordion.setVisibility(View.VISIBLE);
-                }
+                int pos = tab.getPosition();
+                viewExercises.setVisibility(pos == 0 ? View.VISIBLE : View.GONE);
+                rvCoursesAccordion.setVisibility(pos == 1 ? View.VISIBLE : View.GONE);
+                viewMessages.setVisibility(pos == 2 ? View.VISIBLE : View.GONE);
+                viewAttendance.setVisibility(pos == 3 ? View.VISIBLE : View.GONE);
             }
             @Override public void onTabUnselected(TabLayout.Tab tab) {}
             @Override public void onTabReselected(TabLayout.Tab tab) {}
@@ -446,6 +473,29 @@ public class MainActivity extends AppCompatActivity implements
         expiredExerciseAdapter.setItems(expiredExercises);
         courseAccordionAdapter.setCourses(courseList);
 
+        // Update Messages and Attendance
+        messageList.clear();
+        boolean hasAnyAttendance = false;
+        if (courses != null) {
+            for (Course c : courses) {
+                if (c.getMessages() != null) {
+                    messageList.addAll(c.getMessages());
+                }
+                if (c.getAttendanceList() != null && !c.getAttendanceList().isEmpty()) {
+                    hasAnyAttendance = true;
+                }
+            }
+        }
+        messagesAdapter.setItems(messageList);
+        if (layoutEmptyMessages != null) {
+            layoutEmptyMessages.setVisibility(messageList.isEmpty() ? View.VISIBLE : View.GONE);
+        }
+
+        attendanceAdapter.setCourses(courseList);
+        if (layoutEmptyAttendance != null) {
+            layoutEmptyAttendance.setVisibility(!hasAnyAttendance ? View.VISIBLE : View.GONE);
+        }
+
         int activeCount = activeExercises.size();
         tvActiveCountBadge.setText(PersianDateHelper.toPersianDigits(activeCount + " تمرین فعال"));
         layoutEmptyActive.setVisibility(activeCount == 0 ? View.VISIBLE : View.GONE);
@@ -477,8 +527,10 @@ public class MainActivity extends AppCompatActivity implements
         try {
             JSONArray arr = new JSONArray();
             Set<String> currentExIds = new HashSet<>();
+            Set<String> currentMsgIds = new HashSet<>();
             Set<String> newlyFound = new HashSet<>();
             Set<String> known = prefs.getKnownExerciseIds();
+            Set<String> knownMsgIds = prefs.getKnownMessageIds();
             boolean isFirst = known.isEmpty();
 
             for (Course c : courses) {
@@ -494,11 +546,22 @@ public class MainActivity extends AppCompatActivity implements
                         }
                     }
                 }
+                if (c.getMessages() != null) {
+                    for (MessageItem m : c.getMessages()) {
+                        currentMsgIds.add(m.getId());
+                        if (!isFirst && !knownMsgIds.contains(m.getId())) {
+                            String title = "📩 پیام جدید از " + m.getSenderName() + " (" + m.getCourseName() + ")";
+                            String body = m.getTitle() + (m.getMessage().isEmpty() ? "" : "\n" + m.getMessage());
+                            NotificationScheduler.showSyncNotification(this, title, body, m.getId().hashCode());
+                        }
+                    }
+                }
             }
             if (!newlyFound.isEmpty()) {
                 prefs.addUnseenNewExerciseIds(newlyFound);
             }
             prefs.setKnownExerciseIds(currentExIds);
+            prefs.setKnownMessageIds(currentMsgIds);
             prefs.setCachedData(arr.toString());
             prefs.setLastSyncTime(System.currentTimeMillis());
         } catch (Exception ignored) {}
@@ -933,6 +996,8 @@ public class MainActivity extends AppCompatActivity implements
             activeExerciseAdapter.setItems(null);
             expiredExerciseAdapter.setItems(null);
             courseAccordionAdapter.setCourses(null);
+            messagesAdapter.setItems(null);
+            attendanceAdapter.setCourses(null);
             NotificationScheduler.cancelPeriodicSync(this);
             Toast.makeText(this, "از حساب کاربری خارج شدید.", Toast.LENGTH_SHORT).show();
         });

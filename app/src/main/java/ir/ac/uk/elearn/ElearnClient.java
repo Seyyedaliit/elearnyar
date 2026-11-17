@@ -293,6 +293,120 @@ public class ElearnClient {
                 course.setLearningFiles(files);
             }
         } catch (Exception ignored) {}
+
+        // 5. Fetch Messages
+        fetchCourseMessages(course, courseUrl);
+
+        // 6. Fetch Attendance
+        fetchCourseAttendance(course, courseUrl);
+    }
+
+    private void fetchCourseMessages(Course course, String courseUrl) {
+        try {
+            String getUrl = "/STCoursepage.aspx/GetMessageList?TCInfoID=" + URLEncoder.encode(course.getTcInfoId(), "UTF-8");
+            HttpURLConnection conn = createConnection(getUrl, "GET");
+            conn.setRequestProperty("Content-Type", "application/json; charset=utf-8");
+            conn.setRequestProperty("Accept", "application/json, text/javascript, */*; q=0.01");
+            conn.setRequestProperty("X-Requested-With", "XMLHttpRequest");
+            conn.setRequestProperty("Referer", courseUrl);
+
+            int code = conn.getResponseCode();
+            String raw = null;
+            if (code == 200) {
+                raw = readStreamAndClose(conn.getInputStream());
+            } else {
+                HttpURLConnection postConn = createConnection("/STCoursepage.aspx/GetMessageList", "POST");
+                postConn.setRequestProperty("Content-Type", "application/json; charset=utf-8");
+                postConn.setRequestProperty("X-Requested-With", "XMLHttpRequest");
+                postConn.setRequestProperty("Referer", courseUrl);
+                postConn.setDoOutput(true);
+                try (OutputStream os = postConn.getOutputStream()) {
+                    os.write(("{\"TCInfoID\":\"" + course.getTcInfoId() + "\"}").getBytes(StandardCharsets.UTF_8));
+                }
+                if (postConn.getResponseCode() == 200) {
+                    raw = readStreamAndClose(postConn.getInputStream());
+                }
+            }
+
+            if (raw != null && !raw.isEmpty()) {
+                JSONObject obj = new JSONObject(raw);
+                String d = obj.optString("d", "");
+                if (!d.isEmpty()) {
+                    JSONObject root = new JSONObject(d);
+                    JSONArray aaData = root.optJSONArray("aaData");
+                    if (aaData != null) {
+                        List<MessageItem> list = new ArrayList<>();
+                        for (int i = 0; i < aaData.length(); i++) {
+                            JSONObject row = aaData.getJSONObject(i);
+                            MessageItem m = new MessageItem();
+                            m.setId(String.valueOf(row.optInt("Id", row.optInt("id", i + 1))));
+                            m.setTitle(row.optString("Title", row.optString("title", "")));
+                            m.setSenderName(row.optString("fullname", row.optString("FullName", course.getTeacherName())));
+                            m.setInsertDate(row.optString("InsertDate", row.optString("insertdate", "")));
+                            m.setMessage(row.optString("Message", row.optString("message", "")));
+                            m.setRead(row.optInt("isread", 1) == 1);
+                            m.setCourseName(course.getName());
+                            m.setTcInfoId(course.getTcInfoId());
+                            list.add(m);
+                        }
+                        course.setMessages(list);
+                    }
+                }
+            }
+        } catch (Exception ignored) {}
+    }
+
+    private void fetchCourseAttendance(Course course, String courseUrl) {
+        try {
+            String getUrl = "/STCoursepage.aspx/GetAttendanceList?TCInfoID=" + URLEncoder.encode(course.getTcInfoId(), "UTF-8");
+            HttpURLConnection conn = createConnection(getUrl, "GET");
+            conn.setRequestProperty("Content-Type", "application/json; charset=utf-8");
+            conn.setRequestProperty("Accept", "application/json, text/javascript, */*; q=0.01");
+            conn.setRequestProperty("X-Requested-With", "XMLHttpRequest");
+            conn.setRequestProperty("Referer", courseUrl);
+
+            int code = conn.getResponseCode();
+            String raw = null;
+            if (code == 200) {
+                raw = readStreamAndClose(conn.getInputStream());
+            } else {
+                HttpURLConnection postConn = createConnection("/STCoursepage.aspx/GetAttendanceList", "POST");
+                postConn.setRequestProperty("Content-Type", "application/json; charset=utf-8");
+                postConn.setRequestProperty("X-Requested-With", "XMLHttpRequest");
+                postConn.setRequestProperty("Referer", courseUrl);
+                postConn.setDoOutput(true);
+                try (OutputStream os = postConn.getOutputStream()) {
+                    os.write(("{\"TCInfoID\":\"" + course.getTcInfoId() + "\"}").getBytes(StandardCharsets.UTF_8));
+                }
+                if (postConn.getResponseCode() == 200) {
+                    raw = readStreamAndClose(postConn.getInputStream());
+                }
+            }
+
+            if (raw != null && !raw.isEmpty()) {
+                JSONObject obj = new JSONObject(raw);
+                String d = obj.optString("d", "");
+                if (!d.isEmpty()) {
+                    JSONObject root = new JSONObject(d);
+                    JSONArray aaData = root.optJSONArray("aaData");
+                    if (aaData != null) {
+                        List<AttendanceItem> list = new ArrayList<>();
+                        for (int i = 0; i < aaData.length(); i++) {
+                            JSONObject row = aaData.getJSONObject(i);
+                            AttendanceItem a = new AttendanceItem();
+                            a.setDayName(row.optString("PresentDay", ""));
+                            a.setStartTime(row.optString("PresentStartTime", ""));
+                            a.setInsertDate(row.optString("InsertDate", ""));
+                            a.setStatus(row.optBoolean("Status", true));
+                            a.setCourseName(course.getName());
+                            a.setTcInfoId(course.getTcInfoId());
+                            list.add(a);
+                        }
+                        course.setAttendanceList(list);
+                    }
+                }
+            }
+        } catch (Exception ignored) {}
     }
 
     public static String sanitizeFilename(String filename) {

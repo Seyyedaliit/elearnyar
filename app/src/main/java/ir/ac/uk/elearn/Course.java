@@ -22,6 +22,8 @@ public class Course implements Serializable {
 
     private List<ExerciseItem> exercises = new ArrayList<>();
     private List<FileItem> learningFiles = new ArrayList<>();
+    private List<MessageItem> messages = new ArrayList<>();
+    private List<AttendanceItem> attendanceList = new ArrayList<>();
 
     public Course() {}
 
@@ -68,6 +70,32 @@ public class Course implements Serializable {
     public List<FileItem> getLearningFiles() { return learningFiles; }
     public void setLearningFiles(List<FileItem> learningFiles) { this.learningFiles = learningFiles; }
 
+    public List<MessageItem> getMessages() { return messages; }
+    public void setMessages(List<MessageItem> messages) { this.messages = messages; }
+
+    public List<AttendanceItem> getAttendanceList() { return attendanceList; }
+    public void setAttendanceList(List<AttendanceItem> attendanceList) { this.attendanceList = attendanceList; }
+
+    public int getPresentCount() {
+        int c = 0;
+        for (AttendanceItem item : attendanceList) {
+            if (item.isPresent()) c++;
+        }
+        return c;
+    }
+
+    public int getAbsentCount() {
+        int c = 0;
+        for (AttendanceItem item : attendanceList) {
+            if (!item.isPresent()) c++;
+        }
+        return c;
+    }
+
+    public int getTotalSessionsCount() {
+        return attendanceList != null ? attendanceList.size() : 0;
+    }
+
     public int getActiveExercisesCount() {
         int count = 0;
         for (ExerciseItem ex : exercises) {
@@ -101,6 +129,18 @@ public class Course implements Serializable {
         }
         obj.put("learningFiles", fileArr);
 
+        JSONArray msgArr = new JSONArray();
+        for (MessageItem m : messages) {
+            msgArr.put(m.toJson());
+        }
+        obj.put("messages", msgArr);
+
+        JSONArray attArr = new JSONArray();
+        for (AttendanceItem a : attendanceList) {
+            attArr.put(a.toJson());
+        }
+        obj.put("attendanceList", attArr);
+
         return obj;
     }
 
@@ -130,6 +170,22 @@ public class Course implements Serializable {
             for (int i = 0; i < fArr.length(); i++) {
                 JSONObject o = fArr.optJSONObject(i);
                 if (o != null) c.learningFiles.add(FileItem.fromJson(o));
+            }
+        }
+
+        JSONArray msgArr = obj.optJSONArray("messages");
+        if (msgArr != null) {
+            for (int i = 0; i < msgArr.length(); i++) {
+                JSONObject o = msgArr.optJSONObject(i);
+                if (o != null) c.messages.add(MessageItem.fromJson(o));
+            }
+        }
+
+        JSONArray attArr = obj.optJSONArray("attendanceList");
+        if (attArr != null) {
+            for (int i = 0; i < attArr.length(); i++) {
+                JSONObject o = attArr.optJSONObject(i);
+                if (o != null) c.attendanceList.add(AttendanceItem.fromJson(o));
             }
         }
 

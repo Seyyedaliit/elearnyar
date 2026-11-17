@@ -5,6 +5,8 @@
 
     <string name="tab_exercises">تمرین‌های فعال</string>
     <string name="tab_learning">فایل‌های آموزشی</string>
+    <string name="tab_messages">پیام‌ها</string>
+    <string name="tab_attendance">حضور و غیاب</string>
 
     <string name="login_title">ورود به سامانه elearn</string>
     <string name="username_hint">شماره دانشجویی / شماره استادی</string>
@@ -39,4 +41,6 @@
 
     <string name="no_active_exercises">در حال حاضر هیچ تمرین فعالی وجود ندارد 🎉</string>
     <string name="no_learning_files">هیچ فایل آموزشی برای این درس ثبت نشده است.</string>
+    <string name="no_messages">هیچ پیامی از طرف اساتید ثبت نشده است 📩</string>
+    <string name="no_attendance">اطلاعات حضور و غیابی یافت نشد.</string>
 </resources>

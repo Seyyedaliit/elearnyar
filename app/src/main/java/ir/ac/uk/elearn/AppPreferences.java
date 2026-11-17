@@ -182,6 +182,14 @@ public class AppPreferences {
         prefs.edit().putStringSet("known_file_ids", new HashSet<>(ids)).apply();
     }
 
+    public Set<String> getKnownMessageIds() {
+        return prefs.getStringSet("known_message_ids", new HashSet<String>());
+    }
+
+    public void setKnownMessageIds(Set<String> ids) {
+        prefs.edit().putStringSet("known_message_ids", new HashSet<>(ids)).apply();
+    }
+
     // Unseen New Exercises (for in-app indication and badges)
     public Set<String> getUnseenNewExerciseIds() {
         return prefs.getStringSet("unseen_new_exercise_ids", new HashSet<String>());

@@ -62,10 +62,13 @@ public class BackgroundSyncHelper {
 
             List<ExerciseItem> newlyAddedExercises = new ArrayList<>();
             List<FileItem> newlyAddedFiles = new ArrayList<>();
+            List<MessageItem> newlyAddedMessages = new ArrayList<>();
             Set<String> newUnseenExIds = new HashSet<>();
 
             Set<String> knownExIds = prefs.getKnownExerciseIds();
             Set<String> knownFileIds = prefs.getKnownFileIds();
+            Set<String> knownMsgIds = prefs.getKnownMessageIds();
+            Set<String> currentMsgIds = new HashSet<>();
             boolean isFirstScan = knownExIds.isEmpty() && knownFileIds.isEmpty();
 
             for (Course c : courses) {
@@ -88,12 +91,20 @@ public class BackgroundSyncHelper {
                         newlyAddedFiles.add(f);
                     }
                 }
+
+                for (MessageItem m : c.getMessages()) {
+                    currentMsgIds.add(m.getId());
+                    if (!isFirstScan && !knownMsgIds.contains(m.getId())) {
+                        newlyAddedMessages.add(m);
+                    }
+                }
             }
 
             prefs.setCachedData(coursesArr.toString());
             prefs.setLastSyncTime(System.currentTimeMillis());
             prefs.setKnownExerciseIds(currentExIds);
             prefs.setKnownFileIds(currentFileIds);
+            prefs.setKnownMessageIds(currentMsgIds);
 
             // Re-arm milestone alarms for active exercises
             NotificationScheduler.scheduleExerciseReminders(context, allActiveExercises);
@@ -119,7 +130,14 @@ public class BackgroundSyncHelper {
                 NotificationScheduler.showSyncNotification(context, title, body, newFile.getLid().hashCode());
             }
 
-            // 7. Notify scan result
+            // 7. Notify newly added professor messages / announcements
+            for (MessageItem newMsg : newlyAddedMessages) {
+                String title = "📩 پیام جدید از " + newMsg.getSenderName() + " (" + newMsg.getCourseName() + ")";
+                String body = newMsg.getTitle() + (newMsg.getMessage().isEmpty() ? "" : "\n" + newMsg.getMessage());
+                NotificationScheduler.showSyncNotification(context, title, body, newMsg.getId().hashCode());
+            }
+
+            // 8. Notify scan result
             String resultTitle = "پایش سامانه ایلرن! انجام شد";
             String resultBody;
             int activeCount = allActiveExercises.size();
