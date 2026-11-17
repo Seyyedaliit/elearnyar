@@ -267,7 +267,7 @@ public class NotificationScheduler {
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, App.CHANNEL_SYNC_PROGRESS)
                 .setSmallIcon(R.drawable.ic_stat_notification)
-                .setContentTitle("پایش سامانه elearn")
+                .setContentTitle("پایش سامانه ایلرن!")
                 .setContentText(statusMessage != null ? statusMessage : "در حال پایش و بروزرسانی دروس...")
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                 .setOngoing(true)

@@ -339,11 +339,21 @@ public class MainActivity extends AppCompatActivity implements
     private void performSync(boolean userTriggered) {
         if (!prefs.isLoggedIn()) return;
 
+        // 0. If network is disconnected: wait silently without notification!
+        if (!NetworkHelper.isNetworkAvailable(this)) {
+            layoutSyncProgress.setVisibility(View.GONE);
+            if (userTriggered) {
+                Toast.makeText(this, "اتصال اینترنت برقرار نیست. پایش پس از اتصال اینترنت انجام خواهد شد.", Toast.LENGTH_SHORT).show();
+            }
+            NetworkSyncManager.waitForNetworkAndSync(this);
+            return;
+        }
+
         layoutSyncProgress.setVisibility(View.VISIBLE);
-        tvSyncStatus.setText("در حال اتصال به سامانه elearn...");
+        tvSyncStatus.setText("در حال اتصال به سامانه ایلرن!...");
 
         // 1. Show refreshing notification in Notification Center
-        NotificationScheduler.showSyncProgress(this, "در حال اتصال به سامانه elearn...", 0, 100);
+        NotificationScheduler.showSyncProgress(this, "در حال اتصال به سامانه ایلرن!...", 0, 100);
 
         new Thread(() -> {
             try {
@@ -371,7 +381,7 @@ public class MainActivity extends AppCompatActivity implements
                     NotificationScheduler.cancelSyncProgress(this);
 
                     // 3. Post scan result notification in Notification Center
-                    String resultTitle = "پایش سامانه elearn انجام شد";
+                    String resultTitle = "پایش سامانه ایلرن! انجام شد";
                     String resultBody;
                     int activeCount = activeExercises.size();
                     if (activeCount == 0) {
@@ -393,9 +403,18 @@ public class MainActivity extends AppCompatActivity implements
                 mainHandler.post(() -> {
                     layoutSyncProgress.setVisibility(View.GONE);
                     NotificationScheduler.cancelSyncProgress(MainActivity.this);
-                    NotificationScheduler.showSyncResultNotification(MainActivity.this, "خطا در پایش سامانه elearn", "ارتباط با سامانه برقرار نشد: " + e.getMessage());
-                    if (userTriggered) {
-                        Toast.makeText(this, "خطا در بروزرسانی: " + e.getMessage(), Toast.LENGTH_LONG).show();
+
+                    if (!NetworkHelper.isNetworkAvailable(MainActivity.this) || NetworkHelper.isNetworkException(e)) {
+                        // Net disconnected or dropped mid-sync: wait silently without notification!
+                        NetworkSyncManager.waitForNetworkAndSync(MainActivity.this);
+                        if (userTriggered) {
+                            Toast.makeText(this, "ارتباط با اینترنت قطع شد؛ پایش پس از اتصال انجام خواهد شد.", Toast.LENGTH_SHORT).show();
+                        }
+                    } else {
+                        NotificationScheduler.showSyncResultNotification(MainActivity.this, "خطا در پایش سامانه ایلرن!", "ارتباط با سامانه برقرار نشد: " + e.getMessage());
+                        if (userTriggered) {
+                            Toast.makeText(this, "خطا در بروزرسانی: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                        }
                     }
                 });
             }

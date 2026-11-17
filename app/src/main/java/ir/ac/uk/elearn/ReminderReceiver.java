@@ -67,6 +67,12 @@ public class ReminderReceiver extends BroadcastReceiver {
         AppPreferences prefs = AppPreferences.getInstance(context);
         if (!prefs.isLoggedIn() || !prefs.isSyncEnabled()) return;
 
+        // If net is disconnected: stay waiting silently without notification!
+        if (!NetworkHelper.isNetworkAvailable(context)) {
+            NetworkSyncManager.waitForNetworkAndSync(context);
+            return;
+        }
+
         Intent serviceIntent = new Intent(context, BackgroundSyncService.class);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             context.startForegroundService(serviceIntent);
