@@ -475,14 +475,10 @@ public class MainActivity extends AppCompatActivity implements
 
         // Update Messages and Attendance
         messageList.clear();
-        boolean hasAnyAttendance = false;
         if (courses != null) {
             for (Course c : courses) {
                 if (c.getMessages() != null) {
                     messageList.addAll(c.getMessages());
-                }
-                if (c.getAttendanceList() != null && !c.getAttendanceList().isEmpty()) {
-                    hasAnyAttendance = true;
                 }
             }
         }
@@ -493,7 +489,7 @@ public class MainActivity extends AppCompatActivity implements
 
         attendanceAdapter.setCourses(courseList);
         if (layoutEmptyAttendance != null) {
-            layoutEmptyAttendance.setVisibility(!hasAnyAttendance ? View.VISIBLE : View.GONE);
+            layoutEmptyAttendance.setVisibility(courseList.isEmpty() ? View.VISIBLE : View.GONE);
         }
 
         int activeCount = activeExercises.size();
