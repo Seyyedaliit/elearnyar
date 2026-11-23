@@ -1,14 +1,13 @@
 // Service Worker for elearnyar PWA
-const CACHE_NAME = 'elearnyar-cache-v1.9';
+const CACHE_NAME = 'elearnyar-cache-v2.0';
 const ASSETS_TO_CACHE = [
-  './',
-  './index.html',
-  './style.css',
-  './app.js',
-  './manifest.json',
-  './apple-touch-icon.png',
-  './icons/icon-192.png',
-  './icons/icon-512.png'
+  '/',
+  '/style.css',
+  '/app.js',
+  '/manifest.json',
+  '/apple-touch-icon.png',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png'
 ];
 
 self.addEventListener('install', (event) => {
@@ -30,8 +29,15 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Only cache GET requests that are not API calls
   if (event.request.method !== 'GET' || event.request.url.includes('/api/')) {
+    return;
+  }
+
+  // Navigation requests: always serve cached root '/' if offline or network fails
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request).catch(() => caches.match('/'))
+    );
     return;
   }
 
@@ -41,7 +47,7 @@ self.addEventListener('fetch', (event) => {
         return cachedResponse;
       }
       return fetch(event.request).then((networkResponse) => {
-        if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
+        if (!networkResponse || networkResponse.status !== 200) {
           return networkResponse;
         }
         const responseToCache = networkResponse.clone();
@@ -50,9 +56,7 @@ self.addEventListener('fetch', (event) => {
         });
         return networkResponse;
       }).catch(() => {
-        if (event.request.destination === 'document') {
-          return caches.match('./index.html');
-        }
+        return caches.match('/');
       });
     })
   );

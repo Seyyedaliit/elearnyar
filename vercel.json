@@ -5,5 +5,11 @@
     "api/courses.js": {
       "maxDuration": 60
     }
-  }
+  },
+  "rewrites": [
+    {
+      "source": "/index.html",
+      "destination": "/"
+    }
+  ]
 }
