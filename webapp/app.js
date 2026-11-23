@@ -441,22 +441,32 @@ async function performSync() {
       body: JSON.stringify({ username: State.username, password: State.password })
     });
 
-    if (!resp.ok) throw new Error(`خطای سرور: ${resp.status}`);
-    const data = await resp.json();
+    const data = await resp.json().catch(() => ({}));
+
+    if (!resp.ok) {
+      let errMsg = data.error || `خطای سرور (${resp.status})`;
+      if (resp.status === 401 || errMsg === '10') {
+        errMsg = 'نام کاربری یا کلمه عبور اشتباه است.';
+      }
+      throw new Error(errMsg);
+    }
+
     if (data.courses) {
       parseCoursesData(data.courses);
+    } else {
+      throw new Error('اطلاعاتی از سامانه دریافت نشد.');
     }
   } catch (err) {
-    console.warn('Sync failed, using cache:', err.message);
-    UI.tvSyncStatus.textContent = 'ارتباط با سرور پراکسی برقرار نشد. استفاده از داده‌های حافظه...';
+    console.warn('Sync error:', err.message);
+    UI.tvSyncStatus.textContent = err.message || 'خطا در برقراری ارتباط با سامانه ایلرن!';
     setTimeout(() => {
       UI.layoutSyncProgress.style.display = 'none';
-    }, 2500);
+    }, 3500);
   } finally {
     UI.btnSync.classList.remove('spinning');
     setTimeout(() => {
       UI.layoutSyncProgress.style.display = 'none';
-    }, 1200);
+    }, 1500);
   }
 }
 

@@ -9,11 +9,11 @@ const httpsAgent = new https.Agent({
   secureOptions: crypto.constants.SSL_OP_LEGACY_SERVER_CONNECT
 });
 
-function doRequest(options, postData = null, cookieJar = []) {
+function doRequest(options, postData = null, cookieMap = new Map()) {
   return new Promise((resolve, reject) => {
     const headers = options.headers || {};
-    if (cookieJar.length > 0) {
-      headers['Cookie'] = cookieJar.join('; ');
+    if (cookieMap.size > 0) {
+      headers['Cookie'] = Array.from(cookieMap.entries()).map(([k, v]) => `${k}=${v}`).join('; ');
     }
     headers['User-Agent'] = USER_AGENT;
 
@@ -24,15 +24,20 @@ function doRequest(options, postData = null, cookieJar = []) {
       method: options.method || 'GET',
       headers: headers,
       agent: httpsAgent,
-      timeout: 15000
+      timeout: 20000
     };
 
     const req = https.request(reqOptions, (res) => {
       const setCookies = res.headers['set-cookie'];
       if (setCookies) {
         setCookies.forEach((sc) => {
-          const cookiePart = sc.split(';')[0];
-          cookieJar.push(cookiePart);
+          const firstPart = sc.split(';')[0];
+          const eqIdx = firstPart.indexOf('=');
+          if (eqIdx > 0) {
+            const k = firstPart.substring(0, eqIdx).trim();
+            const v = firstPart.substring(eqIdx + 1).trim();
+            cookieMap.set(k, v);
+          }
         });
       }
 
@@ -46,7 +51,7 @@ function doRequest(options, postData = null, cookieJar = []) {
     req.on('error', (err) => reject(err));
     req.on('timeout', () => {
       req.destroy();
-      reject(new Error('Request to elearn.uk.ac.ir timed out (ممکن است دسترسی از خارج کشور مسدود باشد)'));
+      reject(new Error('پاسخی از سامانه ایلرن دریافت نشد (Timeout)'));
     });
 
     if (postData) {
@@ -66,9 +71,8 @@ module.exports = async (req, res) => {
   }
 
   if (req.method === 'GET') {
-    // Health check test
     try {
-      const ping = await doRequest({ path: '/index.aspx', method: 'GET' }, null, []);
+      const ping = await doRequest({ path: '/index.aspx', method: 'GET' }, null, new Map());
       return res.status(200).json({ status: 'ok', elearnStatusCode: ping.statusCode });
     } catch (err) {
       return res.status(500).json({ error: err.message });
@@ -83,19 +87,20 @@ module.exports = async (req, res) => {
   if (typeof body === 'string') {
     try { body = JSON.parse(body); } catch (e) {}
   }
-  const username = (body.username || '').trim();
-  const password = (body.password || '').trim();
+  const username = String(body.username || '').trim();
+  const password = String(body.password || '').trim();
+
   if (!username || !password) {
     return res.status(400).json({ error: 'نام کاربری و کلمه عبور الزامی است.' });
   }
 
-  const cookieJar = [];
+  const cookieMap = new Map();
 
   try {
-    // 1. Visit index.aspx
-    await doRequest({ path: '/index.aspx', method: 'GET' }, null, cookieJar);
+    // 1. Visit index.aspx to get initial session
+    await doRequest({ path: '/index.aspx', method: 'GET' }, null, cookieMap);
 
-    // 2. Login
+    // 2. Login request
     const loginPayload = JSON.stringify({
       valuser: username,
       valpass: password,
@@ -111,12 +116,17 @@ module.exports = async (req, res) => {
         'X-Requested-With': 'XMLHttpRequest',
         'Referer': 'https://elearn.uk.ac.ir/index.aspx'
       }
-    }, loginPayload, cookieJar);
+    }, loginPayload, cookieMap);
 
-    const loginData = JSON.parse(loginRes.body);
+    let loginData = {};
+    try {
+      loginData = JSON.parse(loginRes.body);
+    } catch (e) {
+      return res.status(500).json({ error: 'پاسخ نامعتبر از سرور دانشگاه' });
+    }
+
     if (!loginData.d || loginData.d.Item1 !== 'ok') {
-      const msg = (loginData.d && loginData.d.Item2) ? loginData.d.Item2 : 'نام کاربری یا کلمه عبور اشتباه است.';
-      return res.status(401).json({ error: msg });
+      return res.status(401).json({ error: 'نام کاربری یا کلمه عبور اشتباه است.' });
     }
 
     // 3. Visit STClassList.aspx
@@ -124,7 +134,7 @@ module.exports = async (req, res) => {
       path: '/STClassList.aspx',
       method: 'GET',
       headers: { 'Referer': 'https://elearn.uk.ac.ir/index.aspx' }
-    }, null, cookieJar);
+    }, null, cookieMap);
 
     // 4. Get Courses
     const coursesRes = await doRequest({
@@ -132,13 +142,19 @@ module.exports = async (req, res) => {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json; charset=utf-8',
+        'Accept': 'application/json, text/javascript, */*; q=0.01',
         'X-Requested-With': 'XMLHttpRequest',
         'Referer': 'https://elearn.uk.ac.ir/STClassList.aspx'
       }
-    }, null, cookieJar);
+    }, null, cookieMap);
 
-    const coursesRawObj = JSON.parse(coursesRes.body);
-    const coursesRawList = JSON.parse(coursesRawObj.d || '[]');
+    let coursesRawList = [];
+    try {
+      const coursesRawObj = JSON.parse(coursesRes.body);
+      coursesRawList = JSON.parse(coursesRawObj.d || '[]');
+    } catch (e) {
+      coursesRawList = [];
+    }
 
     const courses = [];
     for (const item of coursesRawList) {
@@ -164,7 +180,7 @@ module.exports = async (req, res) => {
       const courseUrl = `https://elearn.uk.ac.ir/STCoursepage.aspx?CLid=${encodeURIComponent(c.tcInfoId)}`;
 
       try {
-        await doRequest({ path: `/STCoursepage.aspx?CLid=${encodeURIComponent(c.tcInfoId)}`, method: 'GET' }, null, cookieJar);
+        await doRequest({ path: `/STCoursepage.aspx?CLid=${encodeURIComponent(c.tcInfoId)}`, method: 'GET' }, null, cookieMap);
       } catch (e) {}
 
       // GetInfo
@@ -177,7 +193,7 @@ module.exports = async (req, res) => {
             'X-Requested-With': 'XMLHttpRequest',
             'Referer': courseUrl
           }
-        }, '{}', cookieJar);
+        }, '{}', cookieMap);
         const infoObj = JSON.parse(infoRes.body);
         const infoArr = JSON.parse(infoObj.d || '[]');
         if (infoArr.length > 0) {
@@ -197,7 +213,7 @@ module.exports = async (req, res) => {
             'X-Requested-With': 'XMLHttpRequest',
             'Referer': courseUrl
           }
-        }, JSON.stringify({ startpage: '0', rowcount: '50' }), cookieJar);
+        }, JSON.stringify({ startpage: '0', rowcount: '50' }), cookieMap);
         const exObj = JSON.parse(exRes.body);
         const exData = JSON.parse(exObj.d || '{}');
         const aaData = exData.aaData || [];
@@ -229,7 +245,7 @@ module.exports = async (req, res) => {
             'X-Requested-With': 'XMLHttpRequest',
             'Referer': courseUrl
           }
-        }, JSON.stringify({ startpage: '0', rowcount: '50' }), cookieJar);
+        }, JSON.stringify({ startpage: '0', rowcount: '50' }), cookieMap);
         const lfObj = JSON.parse(lfRes.body);
         const lfData = JSON.parse(lfObj.d || '{}');
         const aaData = lfData.aaData || [];
@@ -259,7 +275,7 @@ module.exports = async (req, res) => {
             'X-Requested-With': 'XMLHttpRequest',
             'Referer': courseUrl
           }
-        }, null, cookieJar);
+        }, null, cookieMap);
 
         if (msgRes.statusCode !== 200) {
           msgRes = await doRequest({
@@ -270,7 +286,7 @@ module.exports = async (req, res) => {
               'X-Requested-With': 'XMLHttpRequest',
               'Referer': courseUrl
             }
-          }, JSON.stringify({ TCInfoID: c.tcInfoId }), cookieJar);
+          }, JSON.stringify({ TCInfoID: c.tcInfoId }), cookieMap);
         }
 
         const msgObj = JSON.parse(msgRes.body);
@@ -303,7 +319,7 @@ module.exports = async (req, res) => {
             'X-Requested-With': 'XMLHttpRequest',
             'Referer': courseUrl
           }
-        }, null, cookieJar);
+        }, null, cookieMap);
 
         if (attRes.statusCode !== 200) {
           attRes = await doRequest({
@@ -314,7 +330,7 @@ module.exports = async (req, res) => {
               'X-Requested-With': 'XMLHttpRequest',
               'Referer': courseUrl
             }
-          }, JSON.stringify({ TCInfoID: c.tcInfoId }), cookieJar);
+          }, JSON.stringify({ TCInfoID: c.tcInfoId }), cookieMap);
         }
 
         const attObj = JSON.parse(attRes.body);
@@ -339,6 +355,6 @@ module.exports = async (req, res) => {
     return res.status(200).json({ status: 'ok', courses });
   } catch (err) {
     console.error('API courses error:', err);
-    return res.status(500).json({ error: err.message || 'خطای اتصال به سرور' });
+    return res.status(500).json({ error: err.message || 'خطای اتصال به سرور دانشگاه' });
   }
 };
