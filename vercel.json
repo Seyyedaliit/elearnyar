@@ -11,6 +11,10 @@
       "dest": "/api/download.js"
     },
     {
+      "src": "/",
+      "dest": "/webapp/index.html"
+    },
+    {
       "src": "/(.*)",
       "dest": "/webapp/$1"
     }

@@ -1,10 +1,12 @@
 const https = require('https');
+const crypto = require('crypto');
 
 const BASE_URL = 'elearn.uk.ac.ir';
-const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36';
+const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
 const httpsAgent = new https.Agent({
-  rejectUnauthorized: false
+  rejectUnauthorized: false,
+  secureOptions: crypto.constants.SSL_OP_LEGACY_SERVER_CONNECT
 });
 
 function doRequest(options, postData = null, cookieJar = []) {
@@ -22,11 +24,10 @@ function doRequest(options, postData = null, cookieJar = []) {
       method: options.method || 'GET',
       headers: headers,
       agent: httpsAgent,
-      timeout: 20000
+      timeout: 15000
     };
 
     const req = https.request(reqOptions, (res) => {
-      // Collect Set-Cookie
       const setCookies = res.headers['set-cookie'];
       if (setCookies) {
         setCookies.forEach((sc) => {
@@ -45,7 +46,7 @@ function doRequest(options, postData = null, cookieJar = []) {
     req.on('error', (err) => reject(err));
     req.on('timeout', () => {
       req.destroy();
-      reject(new Error('Request timeout'));
+      reject(new Error('Request to elearn.uk.ac.ir timed out (ممکن است دسترسی از خارج کشور مسدود باشد)'));
     });
 
     if (postData) {
@@ -56,13 +57,22 @@ function doRequest(options, postData = null, cookieJar = []) {
 }
 
 module.exports = async (req, res) => {
-  // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
+  }
+
+  if (req.method === 'GET') {
+    // Health check test
+    try {
+      const ping = await doRequest({ path: '/index.aspx', method: 'GET' }, null, []);
+      return res.status(200).json({ status: 'ok', elearnStatusCode: ping.statusCode });
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
   }
 
   if (req.method !== 'POST') {
@@ -100,7 +110,8 @@ module.exports = async (req, res) => {
 
     const loginData = JSON.parse(loginRes.body);
     if (!loginData.d || loginData.d.Item1 !== 'ok') {
-      return res.status(401).json({ error: 'نام کاربری یا کلمه عبور اشتباه است.' });
+      const msg = (loginData.d && loginData.d.Item2) ? loginData.d.Item2 : 'نام کاربری یا کلمه عبور اشتباه است.';
+      return res.status(401).json({ error: msg });
     }
 
     // 3. Visit STClassList.aspx
@@ -322,6 +333,7 @@ module.exports = async (req, res) => {
 
     return res.status(200).json({ status: 'ok', courses });
   } catch (err) {
-    return res.status(500).json({ error: err.message || 'خطای سرور' });
+    console.error('API courses error:', err);
+    return res.status(500).json({ error: err.message || 'خطای اتصال به سرور' });
   }
 };
