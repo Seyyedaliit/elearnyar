@@ -1,27 +1,9 @@
 {
   "version": 2,
-  "cleanUrls": true,
+  "cleanUrls": false,
   "functions": {
     "api/courses.js": {
       "maxDuration": 60
     }
-  },
-  "routes": [
-    {
-      "src": "/api/courses",
-      "dest": "/api/courses.js"
-    },
-    {
-      "src": "/api/download",
-      "dest": "/api/download.js"
-    },
-    {
-      "src": "/",
-      "dest": "/webapp/index.html"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/webapp/$1"
-    }
-  ]
+  }
 }

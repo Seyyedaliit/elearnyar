@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>elearnyar - ایلرن‌یار</title>
+
+  <!-- iOS Safari Web App Meta Tags -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="elearnyar">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+
+  <!-- Web App Manifest -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#060D1E">
+
+  <!-- Vazirmatn Persian Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- App Container with iOS safe areas -->
+  <div id="app" class="app-container">
+
+    <!-- Top Glassmorphism Header -->
+    <header class="app-header">
+      <div class="header-inner">
+        <div class="header-titles">
+          <div class="brand-row">
+            <h1 class="app-title">elearnyar</h1>
+            <span class="badge-version">v1.7</span>
+          </div>
+          <p id="tv-last-sync" class="last-sync-text">آخرین بروزرسانی: --</p>
+        </div>
+        <div class="header-actions">
+          <button id="btn-sync" class="btn-icon" aria-label="همگام‌سازی">
+            <svg class="icon-svg" viewBox="0 0 24 24" width="22" height="22">
+              <path fill="currentColor" d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+            </svg>
+          </button>
+          <button id="btn-settings" class="btn-icon" aria-label="تنظیمات">
+            <svg class="icon-svg" viewBox="0 0 24 24" width="22" height="22">
+              <path fill="currentColor" d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs (4 Tabs Matching Android v1.7) -->
+      <nav class="nav-tabs-scroll">
+        <div class="nav-tabs" role="tablist">
+          <button class="nav-tab active" data-tab="exercises" role="tab">تمرین‌های فعال</button>
+          <button class="nav-tab" data-tab="learning" role="tab">فایل‌های آموزشی</button>
+          <button class="nav-tab" data-tab="messages" role="tab">پیام‌ها</button>
+          <button class="nav-tab" data-tab="attendance" role="tab">حضور و غیاب</button>
+        </div>
+      </nav>
+    </header>
+
+    <!-- Sync Progress Banner with Percentage Bar -->
+    <div id="layout-sync-progress" class="sync-banner glass-card" style="display: none;">
+      <div class="sync-progress-header">
+        <div class="sync-status-row">
+          <div class="spinner-small"></div>
+          <span id="tv-sync-status" class="sync-status-text">در حال اتصال به سامانه ایلرن!...</span>
+        </div>
+        <span id="tv-sync-percent" class="sync-percent-text">۰٪</span>
+      </div>
+      <div class="progress-bar-track">
+        <div id="pb-sync-indicator" class="progress-bar-fill" style="width: 0%;"></div>
+      </div>
+    </div>
+
+    <!-- New Exercises In-App Banner -->
+    <div id="layout-new-banner" class="new-banner glass-card" style="display: none;">
+      <span class="bell-icon">🔔</span>
+      <span id="tv-new-banner-text" class="new-banner-text">یک تمرین جدید در سامانه ثبت شده است!</span>
+      <button id="btn-dismiss-banner" class="btn-dismiss" aria-label="بستن">✕</button>
+    </div>
+
+    <!-- Main Content Views Container -->
+    <main class="content-container">
+
+      <!-- View 1: Exercises Tab -->
+      <section id="view-exercises" class="tab-view active">
+        <!-- Section Header -->
+        <div class="section-header-row">
+          <h2 class="section-title">تمرین‌های دارای مهلت تحویل</h2>
+          <span id="tv-active-count-badge" class="badge-emerald">۰ تمرین فعال</span>
+        </div>
+
+        <!-- Empty State for Active Exercises -->
+        <div id="layout-empty-active" class="empty-state" style="display: none;">
+          <div class="empty-icon">🎉</div>
+          <p class="empty-text">در حال حاضر هیچ تمرین فعالی وجود ندارد</p>
+        </div>
+
+        <!-- Active Exercises List -->
+        <div id="list-active-exercises" class="cards-list"></div>
+
+        <!-- Expired Exercises Collapsible Accordion -->
+        <div class="expired-section glass-card">
+          <div id="header-expired" class="expired-header" role="button">
+            <svg id="iv-expired-arrow" class="chevron-icon" viewBox="0 0 24 24" width="22" height="22">
+              <path fill="currentColor" d="M16.59 8.59L12 13.17 7.41 8.59 6 10l6 6 6-6z"/>
+            </svg>
+            <span class="expired-title">تمرین‌های منسوخ شده (پایان‌یافته)</span>
+            <span id="tv-expired-count-badge" class="badge-gray">۰ منسوخ</span>
+          </div>
+          <div id="list-expired-exercises" class="expired-content" style="display: none;"></div>
+        </div>
+      </section>
+
+      <!-- View 2: Learning Materials (Course Accordion) -->
+      <section id="view-learning" class="tab-view" style="display: none;">
+        <div id="list-courses-accordion" class="cards-list"></div>
+      </section>
+
+      <!-- View 3: Messages (Teacher Announcements) -->
+      <section id="view-messages" class="tab-view" style="display: none;">
+        <div id="layout-empty-messages" class="empty-state" style="display: none;">
+          <div class="empty-icon">📩</div>
+          <p class="empty-text">هیچ پیامی از طرف اساتید ثبت نشده است</p>
+        </div>
+        <div id="list-messages" class="cards-list"></div>
+      </section>
+
+      <!-- View 4: Attendance (Hozor & Ghayab) -->
+      <section id="view-attendance" class="tab-view" style="display: none;">
+        <div id="layout-empty-attendance" class="empty-state" style="display: none;">
+          <div class="empty-icon">📋</div>
+          <p class="empty-text">اطلاعات حضور و غیابی یافت نشد.</p>
+        </div>
+        <div id="list-attendance" class="cards-list"></div>
+      </section>
+
+    </main>
+
+    <!-- Login Modal Overlay -->
+    <div id="modal-login" class="modal-overlay" style="display: none;">
+      <div class="modal-card glass-card">
+        <div class="modal-brand">
+          <div class="modal-logo">🎓</div>
+          <h2 class="modal-title">ورود به سامانه ایلرن!</h2>
+          <p class="modal-subtitle">دانشگاه شهید باهنر کرمان</p>
+        </div>
+
+        <form id="form-login" class="login-form">
+          <div class="input-group">
+            <label for="input-username">شماره دانشجویی / نام کاربری</label>
+            <input type="text" id="input-username" inputmode="numeric" placeholder="مثال: 9912345678" required autocomplete="username">
+          </div>
+          <div class="input-group">
+            <label for="input-password">کلمه عبور سامانه</label>
+            <input type="password" id="input-password" placeholder="کلمه عبور" required autocomplete="current-password">
+          </div>
+          <button type="submit" id="btn-do-login" class="btn-primary">
+            <span id="btn-login-text">ورود و همگام‌سازی</span>
+          </button>
+
+          <!-- Login Progress Bar -->
+          <div id="login-progress-box" style="display: none; margin-top: 14px; width: 100%;">
+            <div class="sync-progress-header">
+              <span id="tv-login-status" style="font-size: 12px; color: var(--text-secondary);">در حال ورود به سامانه...</span>
+              <span id="tv-login-percent" class="sync-percent-text">۰٪</span>
+            </div>
+            <div class="progress-bar-track" style="margin-top: 6px;">
+              <div id="pb-login-indicator" class="progress-bar-fill" style="width: 0%;"></div>
+            </div>
+          </div>
+        </form>
+
+        <div class="login-footer">
+          <button id="btn-use-demo" class="btn-text">مشاهده حالت نمایشی (بدون لاگین)</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="modal-settings" class="modal-overlay" style="display: none;">
+      <div class="modal-card glass-card">
+        <div class="modal-header-row">
+          <h3 class="modal-title">تنظیمات برنامه</h3>
+          <button id="btn-close-settings" class="btn-dismiss">✕</button>
+        </div>
+
+        <div class="settings-content">
+          <div class="setting-item">
+            <span class="setting-label">کاربر فعلی:</span>
+            <span id="tv-settings-user" class="setting-value">--</span>
+          </div>
+
+          <div class="setting-item-col">
+            <label for="input-proxy-url" class="setting-label">آدرس سرور پراکسی (CORS Proxy):</label>
+            <input type="text" id="input-proxy-url" class="input-text" placeholder="مثال: https://my-proxy.vercel.app">
+            <small class="setting-hint">در صورت اجرای سرور محلی: http://localhost:8000</small>
+          </div>
+
+          <div class="setting-item-col">
+            <button id="btn-save-settings" class="btn-primary">ذخیره تنظیمات</button>
+            <button id="btn-logout" class="btn-danger" style="margin-top: 10px;">خروج از حساب کاربری</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

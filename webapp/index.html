@@ -63,10 +63,18 @@
       </nav>
     </header>
 
-    <!-- Sync Progress Banner -->
+    <!-- Sync Progress Banner with Percentage Bar -->
     <div id="layout-sync-progress" class="sync-banner glass-card" style="display: none;">
-      <div class="spinner-small"></div>
-      <span id="tv-sync-status" class="sync-status-text">در حال اتصال به سامانه ایلرن!...</span>
+      <div class="sync-progress-header">
+        <div class="sync-status-row">
+          <div class="spinner-small"></div>
+          <span id="tv-sync-status" class="sync-status-text">در حال اتصال به سامانه ایلرن!...</span>
+        </div>
+        <span id="tv-sync-percent" class="sync-percent-text">۰٪</span>
+      </div>
+      <div class="progress-bar-track">
+        <div id="pb-sync-indicator" class="progress-bar-fill" style="width: 0%;"></div>
+      </div>
     </div>
 
     <!-- New Exercises In-App Banner -->
@@ -153,8 +161,19 @@
             <input type="password" id="input-password" placeholder="کلمه عبور" required autocomplete="current-password">
           </div>
           <button type="submit" id="btn-do-login" class="btn-primary">
-            <span>ورود و همگام‌سازی</span>
+            <span id="btn-login-text">ورود و همگام‌سازی</span>
           </button>
+
+          <!-- Login Progress Bar -->
+          <div id="login-progress-box" style="display: none; margin-top: 14px; width: 100%;">
+            <div class="sync-progress-header">
+              <span id="tv-login-status" style="font-size: 12px; color: var(--text-secondary);">در حال ورود به سامانه...</span>
+              <span id="tv-login-percent" class="sync-percent-text">۰٪</span>
+            </div>
+            <div class="progress-bar-track" style="margin-top: 6px;">
+              <div id="pb-login-indicator" class="progress-bar-fill" style="width: 0%;"></div>
+            </div>
+          </div>
         </form>
 
         <div class="login-footer">

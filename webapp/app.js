@@ -97,6 +97,8 @@ const UI = {
   tabViews: document.querySelectorAll('.tab-view'),
   layoutSyncProgress: document.getElementById('layout-sync-progress'),
   tvSyncStatus: document.getElementById('tv-sync-status'),
+  tvSyncPercent: document.getElementById('tv-sync-percent'),
+  pbSyncIndicator: document.getElementById('pb-sync-indicator'),
   layoutNewBanner: document.getElementById('layout-new-banner'),
   tvNewBannerText: document.getElementById('tv-new-banner-text'),
   btnDismissBanner: document.getElementById('btn-dismiss-banner'),
@@ -116,6 +118,12 @@ const UI = {
   formLogin: document.getElementById('form-login'),
   inputUsername: document.getElementById('input-username'),
   inputPassword: document.getElementById('input-password'),
+  btnDoLogin: document.getElementById('btn-do-login'),
+  btnLoginText: document.getElementById('btn-login-text'),
+  loginProgressBox: document.getElementById('login-progress-box'),
+  tvLoginStatus: document.getElementById('tv-login-status'),
+  tvLoginPercent: document.getElementById('tv-login-percent'),
+  pbLoginIndicator: document.getElementById('pb-login-indicator'),
   btnUseDemo: document.getElementById('btn-use-demo'),
   modalSettings: document.getElementById('modal-settings'),
   btnCloseSettings: document.getElementById('btn-close-settings'),
@@ -425,11 +433,41 @@ function parseCoursesData(courses) {
 // ==========================================
 // 7. API Client & Synchronization
 // ==========================================
+function startProgressAnimation(updateCallback) {
+  const steps = [
+    { p: 15, msg: 'در حال برقراری ارتباط با سامانه دانشگاه...', delay: 200 },
+    { p: 35, msg: 'تایید هویت دانشجو در سامانه ایلرن...', delay: 900 },
+    { p: 60, msg: 'واکشی لیست دروس و برنامه‌های ترم...', delay: 1800 },
+    { p: 85, msg: 'دریافت فایل‌های آموزشی و مهلت تمرین‌ها...', delay: 2800 },
+    { p: 93, msg: 'بررسی پیام‌های اساتید و حضور و غیاب...', delay: 3800 }
+  ];
+
+  const timers = steps.map(s => setTimeout(() => {
+    updateCallback(s.p, s.msg);
+  }, s.delay));
+
+  return {
+    stop: () => timers.forEach(t => clearTimeout(t)),
+    finish: (msg) => {
+      timers.forEach(t => clearTimeout(t));
+      updateCallback(100, msg || 'اطلاعات با موفقیت دریافت شد!');
+    }
+  };
+}
+
 async function performSync() {
   if (!State.isLoggedIn) return;
   UI.btnSync.classList.add('spinning');
   UI.layoutSyncProgress.style.display = 'flex';
+  if (UI.pbSyncIndicator) UI.pbSyncIndicator.style.width = '0%';
+  if (UI.tvSyncPercent) UI.tvSyncPercent.textContent = '۰٪';
   UI.tvSyncStatus.textContent = 'در حال اتصال به سامانه ایلرن!...';
+
+  const anim = startProgressAnimation((percent, msg) => {
+    UI.tvSyncStatus.textContent = msg;
+    if (UI.tvSyncPercent) UI.tvSyncPercent.textContent = toPersianDigits(`${percent}٪`);
+    if (UI.pbSyncIndicator) UI.pbSyncIndicator.style.width = `${percent}%`;
+  });
 
   try {
     const proxy = State.proxyUrl || '';
@@ -452,13 +490,18 @@ async function performSync() {
     }
 
     if (data.courses) {
-      parseCoursesData(data.courses);
+      anim.finish('اطلاعات با موفقیت به‌روزرسانی شد!');
+      setTimeout(() => {
+        parseCoursesData(data.courses);
+      }, 500);
     } else {
       throw new Error('اطلاعاتی از سامانه دریافت نشد.');
     }
   } catch (err) {
+    anim.stop();
     console.warn('Sync error:', err.message);
     UI.tvSyncStatus.textContent = err.message || 'خطا در برقراری ارتباط با سامانه ایلرن!';
+    if (UI.tvSyncPercent) UI.tvSyncPercent.textContent = 'خطا';
     setTimeout(() => {
       UI.layoutSyncProgress.style.display = 'none';
     }, 3500);
@@ -466,7 +509,7 @@ async function performSync() {
     UI.btnSync.classList.remove('spinning');
     setTimeout(() => {
       UI.layoutSyncProgress.style.display = 'none';
-    }, 1500);
+    }, 2000);
   }
 }
 
@@ -562,16 +605,69 @@ UI.formLogin.addEventListener('submit', async (e) => {
   const p = UI.inputPassword.value.trim();
   if (!u || !p) return;
 
-  State.username = u;
-  State.password = p;
-  State.isLoggedIn = true;
-  localStorage.setItem('elearn_user', u);
-  localStorage.setItem('elearn_pass', p);
-  localStorage.setItem('elearn_logged_in', 'true');
-  UI.modalLogin.style.display = 'none';
-  UI.tvSettingsUser.textContent = u;
+  if (UI.btnDoLogin) UI.btnDoLogin.disabled = true;
+  if (UI.btnLoginText) UI.btnLoginText.textContent = 'در حال ارتباط با سرور...';
+  if (UI.loginProgressBox) UI.loginProgressBox.style.display = 'block';
 
-  performSync();
+  const anim = startProgressAnimation((percent, msg) => {
+    if (UI.tvLoginStatus) {
+      UI.tvLoginStatus.textContent = msg;
+      UI.tvLoginStatus.style.color = 'var(--text-secondary)';
+    }
+    if (UI.tvLoginPercent) UI.tvLoginPercent.textContent = toPersianDigits(`${percent}٪`);
+    if (UI.pbLoginIndicator) UI.pbLoginIndicator.style.width = `${percent}%`;
+  });
+
+  try {
+    const proxy = State.proxyUrl || '';
+    const endpoint = proxy ? `${proxy}/api/courses` : '/api/courses';
+
+    const resp = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: u, password: p })
+    });
+
+    const data = await resp.json().catch(() => ({}));
+
+    if (!resp.ok) {
+      let errMsg = data.error || `خطای ورود (${resp.status})`;
+      if (resp.status === 401 || errMsg === '10') {
+        errMsg = 'نام کاربری یا کلمه عبور اشتباه است.';
+      }
+      throw new Error(errMsg);
+    }
+
+    if (data.courses) {
+      anim.finish('اطلاعات با موفقیت دریافت شد!');
+      State.username = u;
+      State.password = p;
+      State.isLoggedIn = true;
+      localStorage.setItem('elearn_user', u);
+      localStorage.setItem('elearn_pass', p);
+      localStorage.setItem('elearn_logged_in', 'true');
+      UI.tvSettingsUser.textContent = u;
+
+      setTimeout(() => {
+        UI.modalLogin.style.display = 'none';
+        if (UI.loginProgressBox) UI.loginProgressBox.style.display = 'none';
+        if (UI.btnDoLogin) UI.btnDoLogin.disabled = false;
+        if (UI.btnLoginText) UI.btnLoginText.textContent = 'ورود و همگام‌سازی';
+        parseCoursesData(data.courses);
+      }, 700);
+    } else {
+      throw new Error('اطلاعاتی از سامانه دریافت نشد.');
+    }
+  } catch (err) {
+    anim.stop();
+    if (UI.tvLoginStatus) {
+      UI.tvLoginStatus.textContent = err.message || 'خطا در ورود به سامانه!';
+      UI.tvLoginStatus.style.color = '#EF4444';
+    }
+    if (UI.tvLoginPercent) UI.tvLoginPercent.textContent = '✕';
+    if (UI.btnDoLogin) UI.btnDoLogin.disabled = false;
+    if (UI.btnLoginText) UI.btnLoginText.textContent = 'تلاش مجدد';
+  }
 });
 
 UI.btnSync.addEventListener('click', performSync);
