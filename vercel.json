@@ -1,6 +1,11 @@
 {
   "version": 2,
   "cleanUrls": true,
+  "functions": {
+    "api/courses.js": {
+      "maxDuration": 60
+    }
+  },
   "routes": [
     {
       "src": "/api/courses",
