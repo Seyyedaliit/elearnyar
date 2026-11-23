@@ -79,7 +79,12 @@ module.exports = async (req, res) => {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { username, password } = req.body || {};
+  let body = req.body || {};
+  if (typeof body === 'string') {
+    try { body = JSON.parse(body); } catch (e) {}
+  }
+  const username = (body.username || '').trim();
+  const password = (body.password || '').trim();
   if (!username || !password) {
     return res.status(400).json({ error: 'نام کاربری و کلمه عبور الزامی است.' });
   }
