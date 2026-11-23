@@ -144,11 +144,7 @@ public class MainActivity extends AppCompatActivity implements
     private final ActivityResultLauncher<String> notificationPermissionLauncher = registerForActivityResult(
             new ActivityResultContracts.RequestPermission(),
             isGranted -> {
-                if (Boolean.TRUE.equals(isGranted)) {
-                    if (prefs != null && prefs.isLoggedIn()) {
-                        performSync(false);
-                    }
-                }
+                // Permission handled; no sync on permission grant
             }
     );
 
@@ -167,7 +163,10 @@ public class MainActivity extends AppCompatActivity implements
             if (prefs.isLoggedIn()) {
                 layoutLogin.setVisibility(View.GONE);
                 loadDataFromCache();
-                performSync(false);
+                // Only sync if cache is completely empty (first time opening after clean login)
+                if (prefs.getCachedData().isEmpty()) {
+                    performSync(false);
+                }
             } else {
                 layoutLogin.setVisibility(View.VISIBLE);
             }

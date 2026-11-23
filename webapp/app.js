@@ -627,8 +627,9 @@ window.addEventListener('DOMContentLoaded', () => {
       } catch (e) {
         console.error(e);
       }
+    } else {
+      performSync();
     }
-    performSync();
   } else {
     UI.modalLogin.style.display = 'flex';
   }

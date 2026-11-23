@@ -12,7 +12,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/Platform-Android%20%7C%20iOS%20Web-green.svg" alt="Platform" />
-  <img src="https://img.shields.io/badge/Version-1.7-brightgreen.svg" alt="Version" />
+  <img src="https://img.shields.io/badge/Version-1.8-brightgreen.svg" alt="Version" />
   <img src="https://img.shields.io/badge/License-MIT-purple.svg" alt="License" />
 </p>
 
